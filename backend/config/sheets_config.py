@@ -1,18 +1,14 @@
 import os
+
 from google.oauth2.service_account import Credentials
-from dotenv import load_dotenv
 
-load_dotenv()
+GOOGLE_SHEETS_CREDENTIALS_JSON = os.getenv("GOOGLE_SHEETS_CREDENTIALS_JSON")
+SHEET_ID = os.getenv("SHEET_ID")
 
-class SheetsConfig:
-    CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE")
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-    CREDENTIALS = None
-    
-    @classmethod
-    def get_credentials(cls):
-        if cls.CREDENTIALS_FILE and os.path.exists(cls.CREDENTIALS_FILE):
-            return Credentials.from_service_account_file(
-                cls.CREDENTIALS_FILE, scopes=cls.SCOPES
-            )
-        return None
+
+def get_credentials():
+    creds = Credentials.from_service_account_file(
+        GOOGLE_SHEETS_CREDENTIALS_JSON,
+        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    )
+    return creds

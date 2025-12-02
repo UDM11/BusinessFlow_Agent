@@ -1,8 +1,14 @@
 import os
-from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-class DatabaseConfig:
-    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./businessflow.db")
-    ECHO = os.getenv("DB_ECHO", "False").lower() == "true"
+engine = create_engine(DATABASE_URL, echo=True, future=True)
+sessionmaker = sessionmaker(autocommit = False, autoflush=False, bind=engine)
+
+def get_bd():
+    db = sessionmaker()
+    try:
+        yield db
+    finally:db.close()

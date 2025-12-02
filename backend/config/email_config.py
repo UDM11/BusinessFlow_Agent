@@ -1,10 +1,6 @@
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
-
-class EmailConfig:
-    SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-    USERNAME = os.getenv("EMAIL_USERNAME")
-    PASSWORD = os.getenv("EMAIL_PASSWORD")
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
