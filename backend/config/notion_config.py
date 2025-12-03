@@ -1,4 +1,6 @@
-import os
+from .settings import settings
 
-NOTION_TOKEN = os.getenv("NOTION_TOKEN")
-NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
+
+class NotionConfig:
+    api_key = settings.NOTION_API_KEY
+    database_id = settings.NOTION_DATABASE_ID

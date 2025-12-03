@@ -1,14 +1,5 @@
-import os
+from .settings import settings
 
-from google.oauth2.service_account import Credentials
-
-GOOGLE_SHEETS_CREDENTIALS_JSON = os.getenv("GOOGLE_SHEETS_CREDENTIALS_JSON")
-SHEET_ID = os.getenv("SHEET_ID")
-
-
-def get_credentials():
-    creds = Credentials.from_service_account_file(
-        GOOGLE_SHEETS_CREDENTIALS_JSON,
-        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    )
-    return creds
+class SheetsConfig:
+    service_account_json = settings.GOOGLE_SERVICE_ACCOUNT_JSON
+    sheet_id = settings.GOOGLE_SHEET_ID

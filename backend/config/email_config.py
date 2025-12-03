@@ -1,6 +1,8 @@
-import os
+from .settings import settings
 
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+class EmailConfig:
+    host = settings.EMAIL_HOST
+    port = settings.EMAIL_PORT
+    username = settings.EMAIL_USER
+    password = settings.EMAIL_PASSWORD
+    sender = settings.EMAIL_FROM
