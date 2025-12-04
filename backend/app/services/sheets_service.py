@@ -1,56 +1,23 @@
-import logging
-from googleapiclient.discovery import build
-from config.sheets_config import get_credentials, SHEET_ID
-
-
-logger = logging.getLogger(__name__)
-
+import gspread
+from google.oauth2.service_account import Credentials
+from config.sheets_config import SheetsConfig
+from app.utils.logger import logger
 
 
 class SheetsService:
-    def __init__(self, sheet_id = SHEET_ID):
-        self.sheet_id = sheet_id
-        creds = get_credentials()
-        self.service = build('sheets', 'v4', credentials = creds)
+    def __init__(self):
+        creds = Credentials.from_service_account_file(
+            SheetsConfig.service_account_json,
+            scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        )
+        self.client = gspread.authorize(creds)
+        self.sheet = self.client.open_by_key(SheetsConfig.sheet_id).sheet1
 
-
-    def read_range(self, range_name: str) -> list:
-        """
-        Read values from a google sheet range.
-        """
-
+    def append_row(self, row_data: list) -> bool:
         try:
-            sheet = self.service.spreadsheets()
-            result = sheet.values().get(spreadsheetId = self.sheet_id, range = range_name).execute()
-            values = result.get('values', [])
-            logger.info(f"Read {len(values)} rows from range {range_name}")
-            return values
-        
+            self.sheet.append_row(row_data)
+            logger.info("Row appended to Google Sheets")
+            return True
         except Exception as e:
-            logger.error(f"Error reading sheet range {range_name}: {e}")
-            return []
-        
-
-
-    def write_range(self, range_name: str, values: list) -> dict:
-        """
-        Docstring for write_range
-        
-        Write values to a google sheetrange.
-        """
-
-        try:
-            body = {"values": values}
-            sheet = self.service.spreadsheets()
-            result = sheet.values().update(
-                spreadshheetID = self.sheet_id, 
-                range = range_name, 
-                valueInputOption = "RAW",
-                body = body
-            ).execute()
-            logger.info(f"Wrote {len(values)} rows to range {range_name}")
-            return result
-        
-        except Exception as e:
-            logger.error(f"Error writing sheet range {range_name}: {e}")
-            return {}
+            logger.error(f"Sheets Error: {str(e)}")
+            return False

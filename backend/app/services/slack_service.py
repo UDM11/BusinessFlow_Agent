@@ -1,51 +1,24 @@
-import logging
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
-from config.slack_config import SLACK_TOKEN
-
-
-logger = logging.getLogger(__name__)
+from config.slack_config import SlackConfig
+from app.utils.logger import logger
 
 
 class SlackService:
-    def __init__(self, token: str = SLACK_TOKEN):
-        self.client = WebClient(
-            token = token
-        )
+    def __init__(self):
+        self.client = WebClient(token=SlackConfig.bot_token)
 
-    
-    def send_message(self, channel:str, text: str) -> dict:
-        """
-        Send a message to a Slack channel.
-        """
-
+    async def send_message(self, channel: str, text: str) -> dict:
         try:
             response = self.client.chat_postMessage(
-                channel = channel,
-                text = text
+                channel=channel,
+                text=text
             )
-            logger.info(f"Message sent to {channel}: {text}")
+            logger.info(f"Slack message sent → {channel}")
             return response.data
-        
         except SlackApiError as e:
-            logger.error(f"Slcak API error: {e.response['error']}")
-            raise e
-        
+            logger.error(f"Slack Error: {e.response['error']}")
+            raise Exception(f"Slack API error: {e.response['error']}")
 
-
-    def fetch_channels(self) -> list:
-        """
-        List all available channels.
-        """
-
-        try:
-            response = self.client.conversations_list(
-                types = "public_channel,private_channel"
-            )
-            channels  = response["channels"]
-            logger.info(f"Fetched {len(channels)} channels.")
-            return channels
-        
-        except SlackApiError as e:
-            logger.error(f"Error fetching channels: {e.response['error']}")
-            return []
+    async def send_to_default(self, text: str) -> dict:
+        return await self.send_message(SlackConfig.default_channel, text)
