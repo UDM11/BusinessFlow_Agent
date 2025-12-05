@@ -26,8 +26,16 @@ def get_logger(name: str) -> logging.Logger:
     handler = logging.StreamHandler()
     handler.setFormatter(JsonFormatter())
 
-
     if not logger.handlers:
         logger.addHandler(handler)
 
     return logger
+
+
+# Create default logger instance
+logger = get_logger(__name__)
+
+
+# Convenience function for info logging
+def log_info(message: str) -> None:
+    logger.info(message)
