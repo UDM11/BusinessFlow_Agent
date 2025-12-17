@@ -6,6 +6,8 @@ from app.routes.notion_routes import router as notion_router
 from app.routes.sheets_routes import router as sheets_router
 from app.routes.agent_routes import router as agent_router
 from app.routes.health_routes import router as health_router
+from app.auth.routes import router as auth_router
+from app.auth.init_db import init_database
 from app.middleware.error_handler import error_handler_middleware
 from app.utils.logger import log_info
 from config.settings import settings
@@ -34,6 +36,7 @@ def create_app() -> FastAPI:
     # Startup event
     @app.on_event("startup")
     async def on_startup():
+        init_database()
         log_info("BusinessFlow agent backend has started successfully.")
 
     # Shutdown event
@@ -48,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(notion_router, prefix="/api/notion", tags=["Notion"])
     app.include_router(sheets_router, prefix="/api/sheets", tags=["Sheets"])
     app.include_router(agent_router, prefix="/api/agent", tags=["Agent"])
+    app.include_router(auth_router, prefix="/api", tags=["Auth"])
 
     return app
 
