@@ -1,151 +1,125 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { useAgents } from '../../context/AgentContext'
-import { useWorkflows } from '../../context/WorkflowContext'
-import Badge from '../../components/ui/Badge'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { integrationsService } from '../../services/integrations.service';
+import { agentService } from '../../services/agent.service';
+import { Activity, CheckCircle, XCircle, Clock, Play } from 'lucide-react';
 
 const Dashboard = () => {
-  const { agents } = useAgents()
-  const { workflows } = useWorkflows()
+  const [healthStatus, setHealthStatus] = useState({});
+  const [recentWorkflows, setRecentWorkflows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  const stats = [
-    {
-      label: 'Active Agents',
-      value: agents.filter(a => a.status === 'active').length,
-      total: agents.length,
-      color: '#3b82f6'
-    },
-    {
-      label: 'Running Workflows',
-      value: workflows.filter(w => w.status === 'active').length,
-      total: workflows.length,
-      color: '#10b981'
-    },
-    {
-      label: 'Total Executions',
-      value: agents.reduce((sum, a) => sum + a.executions, 0),
-      total: null,
-      color: '#f59e0b'
-    },
-    {
-      label: 'Success Rate',
-      value: '98.5%',
-      total: null,
-      color: '#ef4444'
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      const [health, workflows] = await Promise.all([
+        integrationsService.getHealthStatus(),
+        agentService.getWorkflowHistory()
+      ]);
+      setHealthStatus(health);
+      setRecentWorkflows(workflows.slice(0, 5));
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
-  ]
+  };
 
-  const recentActivity = [
-    { id: 1, type: 'agent', name: 'Email Assistant', action: 'completed execution', time: '2 minutes ago' },
-    { id: 2, type: 'workflow', name: 'Customer Onboarding', action: 'started', time: '5 minutes ago' },
-    { id: 3, type: 'agent', name: 'Data Processor', action: 'updated configuration', time: '1 hour ago' },
-    { id: 4, type: 'workflow', name: 'Data Sync Pipeline', action: 'paused', time: '2 hours ago' }
-  ]
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'healthy': return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'error': return <XCircle className="h-5 w-5 text-red-500" />;
+      default: return <Clock className="h-5 w-5 text-yellow-500" />;
+    }
+  };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64">Loading...</div>;
+  }
 
   return (
-    <div>
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>
-          Dashboard
-        </h1>
-        <p style={{ color: '#64748b' }}>
-          Overview of your AI agents and workflow automation
-        </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <button
+          onClick={() => navigate('/workflows')}
+          className="flex items-center space-x-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700"
+        >
+          <Play className="h-4 w-4" />
+          <span>New Workflow</span>
+        </button>
       </div>
 
-      <div className="grid grid-4" style={{ marginBottom: '32px' }}>
-        {stats.map((stat, index) => (
-          <div key={index} className="card">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="flex items-center">
+            <Activity className="h-8 w-8 text-primary-600" />
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">System Status</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {healthStatus.status === 'healthy' ? 'Healthy' : 'Issues'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {['slack', 'email', 'notion', 'sheets'].map((service) => (
+          <div key={service} className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center justify-between">
               <div>
-                <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '4px' }}>
-                  {stat.label}
-                </p>
-                <p style={{ fontSize: '24px', fontWeight: 'bold', color: stat.color }}>
-                  {stat.value}
-                  {stat.total && <span style={{ fontSize: '16px', color: '#64748b' }}>/{stat.total}</span>}
+                <p className="text-sm font-medium text-gray-600 capitalize">{service}</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {healthStatus[service]?.status || 'Unknown'}
                 </p>
               </div>
+              {getStatusIcon(healthStatus[service]?.status)}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-2">
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Recent Agents</h3>
-            <Link to="/agents" className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>
-              View All
-            </Link>
-          </div>
-          
-          {agents.length === 0 ? (
-            <div className="empty-state">
-              <p>No agents created yet</p>
-              <Link to="/agents/create" className="btn btn-primary" style={{ marginTop: '12px' }}>
-                Create First Agent
-              </Link>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {agents.slice(0, 3).map(agent => (
-                <div key={agent.id} style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  padding: '12px',
-                  background: '#f8fafc',
-                  borderRadius: '6px'
-                }}>
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-medium text-gray-900">Recent Workflows</h2>
+        </div>
+        <div className="divide-y divide-gray-200">
+          {recentWorkflows.length > 0 ? (
+            recentWorkflows.map((workflow) => (
+              <div key={workflow.id} className="px-6 py-4 hover:bg-gray-50">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p style={{ fontWeight: '500' }}>{agent.name}</p>
-                    <p style={{ fontSize: '12px', color: '#64748b' }}>
-                      {agent.executions} executions
+                    <p className="text-sm font-medium text-gray-900">
+                      {workflow.prompt.substring(0, 80)}...
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(workflow.created_at).toLocaleString()}
                     </p>
                   </div>
-                  <Badge variant={agent.status === 'active' ? 'success' : 'info'}>
-                    {agent.status}
-                  </Badge>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    workflow.status === 'completed' 
+                      ? 'bg-green-100 text-green-800'
+                      : workflow.status === 'failed'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {workflow.status}
+                  </span>
                 </div>
-              ))}
+              </div>
+            ))
+          ) : (
+            <div className="px-6 py-8 text-center text-gray-500">
+              No workflows yet. Create your first workflow to get started.
             </div>
           )}
         </div>
-
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Recent Activity</h3>
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {recentActivity.map(activity => (
-              <div key={activity.id} style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                padding: '12px',
-                background: '#f8fafc',
-                borderRadius: '6px'
-              }}>
-                <div>
-                  <p style={{ fontWeight: '500' }}>
-                    {activity.name} {activity.action}
-                  </p>
-                  <p style={{ fontSize: '12px', color: '#64748b' }}>
-                    {activity.time}
-                  </p>
-                </div>
-                <Badge variant="info">
-                  {activity.type}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;
