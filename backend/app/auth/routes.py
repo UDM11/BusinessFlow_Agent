@@ -7,6 +7,15 @@ from datetime import datetime, timedelta
 import os
 from app.database.connection import get_db
 from app.database.models import User
+from pydantic import BaseModel
+
+class TestConnectionRequest(BaseModel):
+    token: str = None
+    api_key: str = None
+    host: str = None
+    port: int = None
+    username: str = None
+    password: str = None
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer()
@@ -47,6 +56,28 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             "role": user.role
         }
     )
+
+@router.get("/verify")
+async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+        
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+            
+        return {
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "role": user.role
+            }
+        }
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.get("/profile")
 async def get_profile(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):

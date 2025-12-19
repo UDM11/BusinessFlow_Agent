@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import apiClient from '../services/apiClient';
+import { authService } from '../services/auth.service';
 
 const AuthContext = createContext();
 
@@ -26,8 +26,8 @@ export const AuthProvider = ({ children }) => {
 
   const verifyToken = async () => {
     try {
-      const response = await apiClient.get('/auth/verify');
-      setUser(response.data.user);
+      const response = await authService.verifyToken();
+      setUser(response.user);
     } catch (error) {
       localStorage.removeItem('token');
     } finally {
@@ -36,11 +36,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (credentials) => {
-    const response = await apiClient.post('/auth/login', credentials);
-    const { token, user } = response.data;
+    const response = await authService.login(credentials);
+    const { token, user } = response;
     localStorage.setItem('token', token);
     setUser(user);
-    return response.data;
+    return response;
   };
 
   const logout = () => {
